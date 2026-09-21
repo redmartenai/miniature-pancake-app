@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "APP_VARIANT": "main",
+        "EXPO_PUBLIC_API_URL": "https://api.REPLACE-ME.example/api/v1"
+      }
+    },
+    "preview-driver": {
+      "extends": "preview",
+      "env": {
+        "APP_VARIANT": "driver",
+        "EXPO_PUBLIC_API_URL": "https://api.REPLACE-ME.example/api/v1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "main",
+        "EXPO_PUBLIC_API_URL": "https://api.REPLACE-ME.example/api/v1"
+      }
+    },
+    "production-driver": {
+      "extends": "production",
+      "env": {
+        "APP_VARIANT": "driver",
+        "EXPO_PUBLIC_API_URL": "https://api.REPLACE-ME.example/api/v1"
+      }
+    }
+  },
+  "submit": {
+    "production": {},
+    "production-driver": {}
+  }
+}

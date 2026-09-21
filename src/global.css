@@ -1,0 +1,26 @@
+/* Web only: make the app fill the window and use the brand background while loading. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f8f5ef;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #161310;
+  }
+}
+
+/* Leaflet map container on the web */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  font-family: Inter, system-ui, sans-serif;
+}
