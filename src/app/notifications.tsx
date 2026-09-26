@@ -38,7 +38,7 @@ export default function NotificationsScreen() {
 
   const open = (item: AppNotification) => {
     if (!item.read) markRead.mutate([item.id]);
-    const target = routeForNotification(item.data as Record<string, unknown>);
+    const target = routeForNotification(item.data as Record<string, unknown>, false);
     if (target && target !== '/notifications') router.push(target as never);
   };
 

@@ -37,7 +37,7 @@ export default function SettingsScreen() {
     stopRealtime();
     queryClient.clear();
     await useSession.getState().signOut();
-    router.replace('/welcome');
+    router.replace('/');
   };
 
   return (

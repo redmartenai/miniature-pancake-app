@@ -2,10 +2,21 @@ import '@/global.css';
 import '@/i18n';
 import '@/features/driver/locationTask';
 
-import { Fraunces_500Medium, Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
+import {
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+} from '@expo-google-fonts/bricolage-grotesque';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_400Regular_Italic,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { focusManager, QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import * as Notifications from 'expo-notifications';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -16,9 +27,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/client';
 import { api } from '@/api/endpoints';
-import { registerForPush, routeForNotification } from '@/features/notifications/push';
+import { addNotificationTapListener, registerForPush, routeForNotification } from '@/features/notifications/push';
 import { usePersonalChannel } from '@/features/realtime/usePersonalChannel';
 import { setLanguage } from '@/i18n';
+import { useLastAccount } from '@/state/lastAccount';
+import { useOffline } from '@/state/offline';
+import { usePreferences } from '@/state/preferences';
 import { useSession } from '@/state/session';
 import { AppThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/tokens';
@@ -48,20 +62,28 @@ if (Platform.OS !== 'web') {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Fraunces_500Medium,
-    Fraunces_600SemiBold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_400Regular_Italic,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
   const status = useSession((s) => s.status);
+  const prefsReady = usePreferences((s) => s.hydrated);
+  const lastReady = useLastAccount((s) => s.hydrated);
 
   useEffect(() => {
     void useSession.getState().hydrate();
+    void usePreferences.getState().hydrate();
+    void useLastAccount.getState().hydrate();
+    void useOffline.getState().hydrate();
   }, []);
 
-  const ready = fontsLoaded && status !== 'loading';
+  const ready = fontsLoaded && prefsReady && lastReady && status !== 'loading';
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);
@@ -91,18 +113,18 @@ function RootStack() {
     ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
     colors: {
       ...(scheme === 'dark' ? DarkTheme : DefaultTheme).colors,
-      primary: colors.primary,
-      background: colors.bg,
+      primary: colors.brand,
+      background: colors.canvas,
       card: colors.surface,
       text: colors.ink,
-      border: colors.border,
+      border: colors.line,
     },
   };
   const header = {
     headerShown: true,
-    headerStyle: { backgroundColor: colors.bg },
-    headerTintColor: colors.primary,
-    headerTitleStyle: { fontFamily: fonts.semibold, color: colors.ink, fontSize: 17 },
+    headerStyle: { backgroundColor: colors.canvas },
+    headerTintColor: colors.brandInk,
+    headerTitleStyle: { fontFamily: fonts.bold, color: colors.ink, fontSize: 16 },
     headerShadowVisible: false,
     headerBackButtonDisplayMode: 'minimal' as const,
   };
@@ -110,23 +132,24 @@ function RootStack() {
   return (
     <ThemeProvider value={navigationTheme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="dev/gallery" />
+        <Stack.Screen name="invite/[token]" />
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>
         <Stack.Protected guard={signedIn}>
-          <Stack.Screen name="family" />
+          <Stack.Screen name="parent" />
+          <Stack.Screen name="student" />
           <Stack.Screen name="staff" />
+          <Stack.Screen name="principal" />
+          <Stack.Screen name="console" />
+          <Stack.Screen name="platform" />
+          <Stack.Screen name="set-password" />
           <Stack.Screen name="driver" />
-          <Stack.Screen name="chat/[id]" options={{ ...header, title: '' }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="chat/new" options={{ ...header, title: '', presentation: 'modal' }} />
-          <Stack.Screen name="attendance" options={{ ...header, title: '' }} />
-          <Stack.Screen name="homework/index" options={{ ...header, title: '' }} />
-          <Stack.Screen name="homework/[id]" options={{ ...header, title: '' }} />
-          <Stack.Screen name="fees" options={{ ...header, title: '' }} />
-          <Stack.Screen name="results" options={{ ...header, title: '' }} />
-          <Stack.Screen name="timetable" options={{ ...header, title: '' }} />
           <Stack.Screen name="announcements" options={{ ...header, title: '' }} />
           <Stack.Screen name="notifications" options={{ ...header, title: '' }} />
           <Stack.Screen name="settings" options={{ ...header, title: '' }} />
@@ -165,11 +188,11 @@ function SignedInEffects() {
 
   useEffect(() => {
     if (Platform.OS === 'web' || !signedIn) return;
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const target = routeForNotification(response.notification.request.content.data as Record<string, unknown>);
+    return addNotificationTapListener((data) => {
+      const role = useSession.getState().role;
+      const target = routeForNotification(data, role === 'parent' || role === 'student', role === 'student' ? '/student' : '/parent');
       if (target) router.push(target as never);
     });
-    return () => subscription.remove();
   }, [signedIn]);
 
   return null;

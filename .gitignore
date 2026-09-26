@@ -50,3 +50,6 @@ dist-native/
 .env
 .env.*
 !.env.example
+
+# Logs (Expo dev servers, npm)
+*.log

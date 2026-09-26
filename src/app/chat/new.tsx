@@ -6,7 +6,7 @@ import { api } from '@/api/endpoints';
 import type { ChatContact } from '@/api/types';
 import { Avatar, Card, EmptyState, ErrorState, ListRow, LoadingCards, Screen, SectionHeader, useToast } from '@/ui';
 
-/** Pick who to message: each child's teachers and the school office teams. */
+/** Pick who to message: each child's teachers and the school office teams (or, for staff, a colleague). */
 export default function NewConversation() {
   const { t } = useTranslation();
   const toast = useToast();
@@ -17,11 +17,13 @@ export default function NewConversation() {
     onError: () => toast(t('common.somethingWrong'), 'danger'),
   });
 
+  // Families pick a child first; staff see their colleagues in one group.
   const byChild = new Map<string, { name: string; items: ChatContact[] }>();
   for (const contact of contacts.data?.contacts ?? []) {
-    const entry = byChild.get(contact.student.id) ?? { name: contact.student.name, items: [] };
+    const key = contact.student?.id ?? 'colleagues';
+    const entry = byChild.get(key) ?? { name: contact.student?.name ?? '', items: [] };
     entry.items.push(contact);
-    byChild.set(contact.student.id, entry);
+    byChild.set(key, entry);
   }
 
   return (
@@ -36,7 +38,7 @@ export default function NewConversation() {
       ) : (
         [...byChild.entries()].map(([childId, group]) => (
           <Card key={childId} padded={false}>
-            <SectionHeader title={t('chat.about', { name: group.name })} />
+            <SectionHeader title={childId === 'colleagues' ? t('chat.colleagues') : t('chat.about', { name: group.name })} />
             {group.items.map((contact, index) => (
               <ListRow
                 key={`${contact.kind}-${contact.user_id ?? contact.department}`}

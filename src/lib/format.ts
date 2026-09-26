@@ -97,3 +97,79 @@ export function monthLabel(yearMonth: string): string {
   const [y, m] = yearMonth.split('-').map(Number);
   return `${MONTHS[m - 1]} ${y}`;
 }
+
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** "14:30" → "2:30" (no AM/PM, for "till 2:30"). */
+export function clockShort(hhmm: string | null | undefined): string {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}`;
+}
+
+/** ISO datetime → "2:30" in the device's time zone. */
+export function timeShort(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return `${date.getHours() % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/** "Tuesday, 22 September" */
+export function longDate(value: string | Date = new Date()): string {
+  const date = typeof value === 'string' ? parseDate(value) : value;
+  return `${WEEKDAYS_FULL[date.getDay()]}, ${date.getDate()} ${MONTHS_FULL[date.getMonth()]}`;
+}
+
+export function monthName(value: string | Date, short = false): string {
+  const date = typeof value === 'string' ? parseDate(value) : value;
+  return short ? MONTHS[date.getMonth()] : MONTHS_FULL[date.getMonth()];
+}
+
+export function weekdayName(value: string | Date, short = false): string {
+  const date = typeof value === 'string' ? parseDate(value) : value;
+  return short ? WEEKDAYS[date.getDay()] : WEEKDAYS_FULL[date.getDay()];
+}
+
+/** Whole days from today to `value` (negative when past). */
+export function daysUntil(value: string | Date): number {
+  const date = typeof value === 'string' ? parseDate(value) : new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  return Math.round((date.getTime() - today.getTime()) / 86_400_000);
+}
+
+/** Monday of the week containing `date`. */
+export function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+export function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+/** Bytes → "184 KB" / "2.1 MB". */
+export function fileSize(bytes: number | null | undefined): string {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** "Aarav", "Aarav and Diya", "Aarav, Diya and Kabir" (or "और" in Hindi). */
+export function joinNames(names: string[], symbol = false): string {
+  if (names.length <= 1) return names[0] ?? '';
+  const and = symbol ? '&' : i18n.language === 'hi' ? 'और' : 'and';
+  return `${names.slice(0, -1).join(', ')} ${and} ${names[names.length - 1]}`;
+}
+
+/** "Nikhil Rao" → "NR" (first and last word). */
+export function initialsOf(name: string): string {
+  const words = name.replace(/^(Dr|Mr|Mrs|Ms)\.?\s+/i, '').split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+  return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
+}

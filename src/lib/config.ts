@@ -52,3 +52,10 @@ export function resolveServiceUrl(url: string): string {
 export const MAP_TILE_URL =
   process.env.EXPO_PUBLIC_MAP_TILE_URL ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const MAP_ATTRIBUTION = process.env.EXPO_PUBLIC_MAP_ATTRIBUTION ?? '© OpenStreetMap contributors';
+
+/**
+ * Where the web app lives (the principal's full dashboard). On the web it's this site;
+ * phones need EXPO_PUBLIC_WEB_URL (null when unset, so the hand-off explains instead of opening nothing).
+ */
+export const WEB_URL: string | null =
+  process.env.EXPO_PUBLIC_WEB_URL?.replace(/\/$/, '') ?? (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : null);

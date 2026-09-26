@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { create } from 'zustand';
 
 import { api } from '@/api/endpoints';
 import type { StudentCard } from '@/api/types';
+import { useLastAccount } from '@/state/lastAccount';
 import { useSession } from '@/state/session';
 
 const useSelectedChild = create<{ childId?: string; select: (id: string) => void }>((set) => ({
@@ -31,6 +34,16 @@ export function useFamily() {
   const students: StudentCard[] = role === 'parent' ? (children.data?.children ?? []) : self.data ? [self.data] : [];
   const selected = students.find((s) => s.id === childId) ?? students[0];
   const active = role === 'parent' ? children : self;
+
+  // Remember "Parent of Aarav (6-B) & Diya (2-A)" for the OTP screen's "Signing in as" card.
+  const { t } = useTranslation();
+  const kids = children.data?.children;
+  useEffect(() => {
+    if (role !== 'parent' || !kids?.length) return;
+    const names = kids.map((k) => `${k.first_name} (${k.class.short_label})`);
+    const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}` : names[0];
+    useLastAccount.getState().update({ detail: t('auth.parentOf', { names: list }) });
+  }, [role, kids, t]);
 
   return {
     students,

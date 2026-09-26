@@ -3,26 +3,44 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing } from '@/theme/tokens';
 
+import { cardShadowLg } from './css';
 import { Text } from './Text';
 
-/** Bottom sheet for short choices and confirmations (works the same on phones and the web). */
-export function Sheet({ visible, onClose, title, message, children }: { visible: boolean; onClose: () => void; title: string; message?: string; children: ReactNode }) {
-  const { colors } = useTheme();
+/** `.sheet`: bottom sheet with a grabber (28px top corners) over the design's scrim. */
+export function Sheet({
+  visible,
+  onClose,
+  title,
+  message,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  message?: string;
+  children?: ReactNode;
+}) {
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close" style={[styles.backdrop, { backgroundColor: colors.overlay }]} onPress={onClose} />
-      <View style={[styles.sheet, { backgroundColor: colors.bg, paddingBottom: insets.bottom + spacing.md }]} accessibilityViewIsModal>
-        <View style={[styles.handle, { backgroundColor: colors.border }]} />
-        <Text variant="title">{title}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close" style={[styles.backdrop, { backgroundColor: colors.scrim }]} onPress={onClose} />
+      <View
+        style={[
+          styles.sheet,
+          { backgroundColor: colors.surface, borderColor: colors.line, paddingBottom: insets.bottom + 20 },
+          cardShadowLg(scheme),
+        ]}
+        accessibilityViewIsModal>
+        <View style={[styles.grabber, { backgroundColor: colors.lineStrong }]} />
+        <Text variant="h2">{title}</Text>
         {message ? (
-          <Text variant="body" color="textMuted">
+          <Text variant="body" color="ink2">
             {message}
           </Text>
         ) : null}
-        <View style={styles.body}>{children}</View>
+        {children ? <View style={styles.body}>{children}</View> : null}
       </View>
     </Modal>
   );
@@ -36,13 +54,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     maxWidth: 560,
-    alignSelf: 'center',
+    // Centred on wide screens (an absolute box needs auto margins, not alignSelf).
+    marginHorizontal: 'auto',
     width: '100%',
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    gap: 12,
   },
-  handle: { width: 40, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: spacing.xs },
-  body: { gap: spacing.sm, marginTop: spacing.sm },
+  grabber: { width: 40, height: 5, borderRadius: 999, alignSelf: 'center', marginBottom: 8 },
+  body: { gap: 12, marginTop: 4 },
 });

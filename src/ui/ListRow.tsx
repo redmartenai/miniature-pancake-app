@@ -1,72 +1,100 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, toneColors, type Tone } from '@/theme/tokens';
+import type { Tone } from '@/theme/tokens';
 
-import { Icon, type IconName } from './Icon';
+import { useSurface } from './Card';
+import { pointer } from './css';
+import { TileIcon, type TileTone } from './Data';
+import { Icon, ICON_SIZE, type IconName } from './Icon';
 import { Text } from './Text';
 
 type ListRowProps = {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   icon?: IconName;
-  iconTone?: Tone;
+  iconTone?: TileTone | Tone;
   left?: ReactNode;
   right?: ReactNode;
   onPress?: () => void;
   chevron?: boolean;
   last?: boolean;
+  /** Horizontal padding inside the row (0 when the parent card is already padded). */
+  inset?: number;
+  /** Vertical padding (`.list-item` is 14). */
+  py?: number;
+  /** Bold/unread styling for the title. */
+  strong?: boolean;
+  accessibilityLabel?: string;
   accessibilityHint?: string;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function ListRow({ title, subtitle, icon, iconTone = 'primary', left, right, onPress, chevron = !!onPress, last, accessibilityHint }: ListRowProps) {
+const TONE_MAP: Partial<Record<Tone, TileTone>> = { primary: 'brand', success: 'ok', warning: 'warn', danger: 'bad', accent: 'peach' };
+
+/** `.list-item`: tile icon, two lines of text, trailing content, hairline between rows. */
+export function ListRow({
+  title,
+  subtitle,
+  icon,
+  iconTone = 'brand',
+  left,
+  right,
+  onPress,
+  chevron = !!onPress,
+  last,
+  inset = 16,
+  py = 14,
+  strong = true,
+  accessibilityLabel,
+  accessibilityHint,
+  style,
+}: ListRowProps) {
   const { colors } = useTheme();
-  const { fg, bg } = toneColors(colors, iconTone);
+  const surface = useSurface();
+  const tone = (TONE_MAP[iconTone as Tone] ?? iconTone) as TileTone;
+  const rule = surface.kind === 'widget' ? colors.pHr : colors.line;
   const content = (
-    <View style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth * 2, borderBottomColor: colors.borderSoft }]}>
-      {left ??
-        (icon ? (
-          <View style={[styles.icon, { backgroundColor: bg }]}>
-            <Icon name={icon} size={19} rawColor={fg} />
-          </View>
-        ) : null)}
+    <View style={[styles.row, { paddingHorizontal: inset, paddingVertical: py }, !last && { borderBottomWidth: 1, borderBottomColor: rule }, style]}>
+      {left ?? (icon ? <TileIcon icon={icon} tone={tone} /> : null)}
       <View style={styles.text}>
-        <Text variant="bodyStrong" numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text variant="caption" numberOfLines={2}>
-            {subtitle}
+        {typeof title === 'string' ? (
+          <Text variant="sm" weight={strong ? 700 : 600} color="ink" numberOfLines={1} style={{ fontSize: 14 }}>
+            {title}
           </Text>
+        ) : (
+          title
+        )}
+        {subtitle ? (
+          typeof subtitle === 'string' ? (
+            <Text variant="xs" color="muted" numberOfLines={2}>
+              {subtitle}
+            </Text>
+          ) : (
+            subtitle
+          )
         ) : null}
       </View>
       {right}
-      {chevron ? <Icon name="chevron-forward" size={18} color="textMuted" /> : null}
+      {chevron ? <Icon name="chevronRight" size={ICON_SIZE.sm} rawColor={colors.faint} /> : null}
     </View>
   );
   if (!onPress) return content;
+  const label = accessibilityLabel ?? [title, subtitle].filter((v) => typeof v === 'string').join(', ');
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
+      accessibilityLabel={label || undefined}
       accessibilityHint={accessibilityHint}
       onPress={onPress}
-      style={({ pressed }) => pressed && { backgroundColor: colors.surfaceAlt }}>
+      style={({ pressed }) => [pointer, pressed && { backgroundColor: surface.kind === 'widget' ? colors.pTrack : colors.subtle }]}>
       {content}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: 60,
-  },
-  icon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  text: { flex: 1, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  text: { flex: 1, minWidth: 0, gap: 2 },
 });

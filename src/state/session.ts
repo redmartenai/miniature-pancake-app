@@ -3,21 +3,26 @@ import { create } from 'zustand';
 import type { AuthSession, Membership, MembershipRole, Role, School, User } from '@/api/types';
 import { IS_DRIVER_APP } from '@/lib/config';
 
+import { useLastAccount } from './lastAccount';
 import { appStorage, secureStorage } from './storage';
 
 const TOKENS_KEY = 'eduflow.tokens';
 const PROFILE_KEY = 'eduflow.profile';
 
-type Profile = { user: User; memberships: Membership[]; schoolId: string; role: Role };
+/** Platform staff may have no school, so `schoolId`/`role` are optional. */
+type Profile = { user: User; memberships: Membership[]; schoolId?: string; role?: Role };
 
-/** Which part of the app a role uses. */
-export type Experience = 'family' | 'staff' | 'driver';
+/**
+ * Which part of the app a role uses. Each experience has its own route group and dock.
+ * Principals join the `principal` group when those screens land; until then they use `staff`.
+ */
+export type Experience = 'parent' | 'student' | 'staff' | 'principal' | 'driver';
 
 export const ROLE_EXPERIENCE: Record<Role, Experience> = {
-  parent: 'family',
-  student: 'family',
+  parent: 'parent',
+  student: 'student',
   teacher: 'staff',
-  principal: 'staff',
+  principal: 'principal',
   admin: 'staff',
   accountant: 'staff',
   transport_manager: 'staff',
@@ -64,11 +69,13 @@ type SessionState = {
   setProfile: (user: User, memberships: Membership[]) => Promise<void>;
   selectSchool: (schoolId: string) => Promise<void>;
   selectRole: (role: Role) => Promise<void>;
+  /** Replace the signed-in user (e.g. after they set their own password). */
+  updateUser: (user: User) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
 async function persistProfile(state: Pick<SessionState, 'user' | 'memberships' | 'schoolId' | 'role'>) {
-  if (state.user && state.schoolId && state.role) {
+  if (state.user && ((state.schoolId && state.role) || state.user.platform)) {
     await appStorage.setJson(PROFILE_KEY, {
       user: state.user,
       memberships: state.memberships,
@@ -83,10 +90,7 @@ export const useSession = create<SessionState>((set, get) => ({
   memberships: [],
 
   hydrate: async () => {
-    const [tokens, profile] = await Promise.all([
-      secureStorage.get(TOKENS_KEY),
-      appStorage.getJson<Profile>(PROFILE_KEY),
-    ]);
+    const [tokens, profile] = await Promise.all([secureStorage.get(TOKENS_KEY), appStorage.getJson<Profile>(PROFILE_KEY)]);
     if (!tokens || !profile) {
       set({ status: 'signedOut' });
       return;
@@ -102,9 +106,32 @@ export const useSession = create<SessionState>((set, get) => ({
   setPendingSchool: (school) => set({ pendingSchool: school }),
 
   signIn: async ({ access, refresh, user, memberships }) => {
+    // Prefer the school typed on "Change school", then the one used last on this device.
     const pending = get().pendingSchool;
-    const membership = memberships.find((m) => m.school.id === pending?.id) ?? memberships[0];
+    const last = useLastAccount.getState().account;
+    const membership =
+      memberships.find((m) => m.school.id === pending?.id) ??
+      memberships.find((m) => m.school.id === last?.schoolId && last?.phone === user.phone) ??
+      memberships[0];
+    if (!membership) {
+      // EduFlow platform staff belong to no school; they go to /platform.
+      await secureStorage.set(TOKENS_KEY, JSON.stringify({ access, refresh }));
+      const next = { user, memberships, schoolId: undefined, role: undefined };
+      await persistProfile(next);
+      set({ status: 'signedIn', access, refresh, pendingSchool: undefined, ...next });
+      return;
+    }
     const role = defaultRole(membership.roles);
+    useLastAccount.getState().remember({
+      phone: user.phone,
+      name: user.full_name,
+      initials: user.initials,
+      role,
+      detail: last?.phone === user.phone && last.role === role ? last.detail : undefined,
+      schoolId: membership.school.id,
+      schoolName: membership.school.name,
+      schoolDetail: [membership.school.campus, membership.school.academic_year].filter(Boolean).join(' · ') || membership.school.city,
+    });
     await secureStorage.set(TOKENS_KEY, JSON.stringify({ access, refresh }));
     const next = { user, memberships, schoolId: membership.school.id, role };
     await persistProfile({ ...next });
@@ -120,6 +147,12 @@ export const useSession = create<SessionState>((set, get) => ({
     const state = get();
     const membership = memberships.find((m) => m.school.id === state.schoolId) ?? memberships[0];
     if (!membership) {
+      if (user.platform) {
+        const next = { user, memberships, schoolId: undefined, role: undefined };
+        await persistProfile(next);
+        set(next);
+        return;
+      }
       await get().signOut();
       return;
     }
@@ -142,6 +175,12 @@ export const useSession = create<SessionState>((set, get) => ({
     const next = { role, user: get().user, memberships: get().memberships, schoolId: get().schoolId };
     await persistProfile(next);
     set({ role });
+  },
+
+  updateUser: async (user) => {
+    const next = { user, memberships: get().memberships, schoolId: get().schoolId, role: get().role };
+    await persistProfile(next);
+    set({ user });
   },
 
   signOut: async () => {

@@ -39,7 +39,7 @@ function ToastView({ message, onDone }: { message: ToastMessage; onDone: () => v
     ]).start(() => onDone());
   }, [opacity, onDone]);
   return (
-    <View pointerEvents="none" style={[styles.host, { bottom: insets.bottom + 72 }]}>
+    <View style={[{ pointerEvents: 'none' },styles.host, { bottom: insets.bottom + 72 }]}>
       <Animated.View
         accessibilityLiveRegion="polite"
         accessibilityRole="alert"
