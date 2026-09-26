@@ -41,3 +41,12 @@ example
 # generated native folders
 /ios
 /android
+
+# export builds
+dist-web/
+dist-native/
+
+# env files (keep the example)
+.env
+.env.*
+!.env.example
