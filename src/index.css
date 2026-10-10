@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════
+   EduFlow — a school, not a system
+   Warm charcoal · stone · ivory · forest · copper · slate
+   Palette lifted from AfterOn.html so the app and the story match.
+   ══════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-ink: #241F1B;
+  --color-charcoal: #332F29;
+  --color-charcoal-2: #4A443C;
+  --color-stone: #8B8377;
+  --color-stone-l: #B6AFA3;
+  --color-stone-p: #DCD6CB;
+  --color-ivory: #F8F5EF;
+  --color-ivory-2: #FDFCF8;
+  --color-paper: #F0EBE2;
+  --color-forest: #2E5D4E;
+  --color-forest-d: #24493D;
+  --color-forest-l: #417A66;
+  --color-forest-p: #E4EDE9;
+  --color-copper: #B4763A;
+  --color-copper-d: #96602D;
+  --color-copper-l: #D19A5C;
+  --color-copper-p: #F7EDE0;
+  --color-slate: #4E5A66;
+  --color-slate-l: #7C8894;
+  --color-slate-p: #E7EBEE;
+  --color-amber: #E0A53F;
+  --color-amber-p: #FBF0D9;
+  --color-rust: #A4483A;
+  --color-rust-p: #F5E3DF;
+  --color-line: #E2DCD1;
+  --color-line-2: #EDE8DF;
+  /* Text on the primary (forest) and secondary (copper) families; a school's branding overrides both. */
+  --color-on-forest: #F8F5EF;
+  --color-on-copper: #F8F5EF;
+
+  --font-serif: 'Zodiak', Georgia, 'Times New Roman', serif;
+  --font-sans: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --radius-ui: 8px;
+  --radius-in: 5px;
+
+  --shadow-1: 0 1px 2px rgba(36, 31, 27, .05);
+  --shadow-2: 0 14px 30px -16px rgba(36, 31, 27, .24);
+  --shadow-3: 0 36px 74px -42px rgba(36, 31, 27, .42);
+  --shadow-phone: 0 50px 100px -40px rgba(36, 31, 27, .55), 0 0 0 1px rgba(36, 31, 27, .08);
+
+  --ease-ez: cubic-bezier(.4, 0, .2, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-calm: cubic-bezier(.32, .72, .28, 1);
+}
+
+@layer base {
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-ivory);
+  color: var(--color-charcoal-2);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-serif);
+  color: var(--color-ink);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+button { cursor: pointer; font: inherit; color: inherit; }
+button:disabled { cursor: not-allowed; }
+
+:focus-visible { outline: 2px solid var(--color-forest-l); outline-offset: 2px; border-radius: 4px; }
+
+::selection { background: var(--color-copper-p); color: var(--color-ink); }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Quiet scrollbars — the app should feel like paper, not chrome */
+.scroll-quiet { scrollbar-width: thin; scrollbar-color: var(--color-stone-p) transparent; }
+.scroll-quiet::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-quiet::-webkit-scrollbar-thumb { background: var(--color-stone-p); border-radius: 8px; }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+/* Faint paper grain used behind hero areas */
+.paper-grain {
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(209, 154, 92, .10), transparent 45%),
+    radial-gradient(circle at 100% 30%, rgba(46, 93, 78, .08), transparent 40%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Receipts and payslips print without the app chrome */
+@media print {
+  aside, header, nav { display: none !important; }
+  body { background: #fff; }
+  .lg\:pl-\[256px\] { padding-left: 0 !important; }
+}
+
+/* ══════════ 3D campus labels (rendered as DOM over the WebGL scene) ══════════ */
+.campus-chip {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  min-width: 92px; padding: 6px 12px 7px 13px; border-radius: 12px; white-space: nowrap; cursor: pointer;
+  background: rgba(253, 252, 248, .93); border: 1px solid rgba(226, 220, 209, .9);
+  box-shadow: 0 10px 24px -14px rgba(36, 31, 27, .45); backdrop-filter: blur(8px);
+  transition: transform .25s cubic-bezier(.16, 1, .3, 1), box-shadow .25s;
+}
+.campus-chip::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--chip, #8B8377); }
+.campus-chip:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -14px rgba(36, 31, 27, .5); }
+.campus-chip__title { font-family: var(--font-serif); font-size: 17px; line-height: 1.05; color: #241F1B; }
+.campus-chip__sub { font-size: 11px; font-weight: 500; color: #8B8377; }
+.campus-chip__reg { position: absolute; right: 6px; top: 6px; width: 7px; height: 7px; border-radius: 99px; background: #E0A53F; box-shadow: 0 0 0 3px rgba(224, 165, 63, .25); }
+.campus-chip--forest { --chip: #417A66; }
+.campus-chip--copper { --chip: #B4763A; }
+.campus-chip--slate { --chip: #7C8894; }
+.campus-chip--amber { --chip: #E0A53F; }
+.campus-chip--stone { --chip: #B6AFA3; }
+.campus-chip--rust { --chip: #A4483A; }
+.campus-chip.is-alarm { background: #A4483A; border-color: #A4483A; animation: campus-alarm 1.6s ease-in-out infinite; }
+.campus-chip.is-alarm .campus-chip__title, .campus-chip.is-alarm .campus-chip__sub { color: #FDFCF8; }
+.campus-chip.is-alarm::before { background: #FDFCF8; }
+.campus-chip.is-selected { outline: 2px solid #D19A5C; outline-offset: 2px; }
+@keyframes campus-alarm { 0%, 100% { box-shadow: 0 0 0 0 rgba(164, 72, 58, .55); } 50% { box-shadow: 0 0 0 10px rgba(164, 72, 58, 0); } }
+
+.campus-level { font-family: var(--font-serif); font-size: 30px; line-height: 1; color: #FDFCF8; text-shadow: 0 2px 10px rgba(36, 31, 27, .35); }
+.campus-floorname { padding: 3px 9px; border-radius: 99px; font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; color: #4A443C; background: rgba(253, 252, 248, .85); border: 1px solid rgba(226, 220, 209, .9); }
+.campus-sign { font-family: var(--font-serif); font-size: 56px; line-height: .95; color: #FDFCF8; text-align: center; white-space: nowrap; text-shadow: 0 2px 12px rgba(36, 31, 27, .25); }
+.campus-sign span { font-family: var(--font-sans); font-size: 13px; letter-spacing: .24em; text-transform: uppercase; opacity: .85; }
+.campus-bus { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 4px; border-radius: 99px; background: rgba(36, 31, 27, .86); color: #F8F5EF; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.campus-bus b { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 4px; border-radius: 99px; background: #E3A93C; color: #241F1B; font-weight: 700; }
+.campus-bus.is-late { background: #A4483A; }
+.campus-bus.is-late b { background: #FDFCF8; color: #A4483A; }
+.campus-chip--block { min-width: 132px; padding: 8px 14px 9px 15px; border-radius: 14px; }
+.campus-chip--block .campus-chip__title { font-size: 21px; }
+.campus-chip--block .campus-chip__sub { font-size: 12px; }
